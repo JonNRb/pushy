@@ -102,12 +102,12 @@ def Popen(command, password, **kwargs):
 
     # Create a temporary, executable-by-owner file.
     (fd, path) = tempfile.mkstemp(text=True)
-    os.chmod(path, 0700)
+    os.chmod(path, 0o700)
 
     try:
         tf = os.fdopen(fd, "w")
-        print >> tf, "#!" + sys.executable
-        print >> tf, "import os; print os.environ['SSH_PASSWORD']"
+        print("#!" + sys.executable, file=tf)
+        print("import os; print os.environ['SSH_PASSWORD']", file=tf)
         tf.close()
 
         # Configure environment variables.
@@ -143,6 +143,6 @@ print sys.stdin.read()
                  stdin=subprocess.PIPE,
                  stdout=subprocess.PIPE,
                  env=new_env)
-    print proc.communicate("abcxyz")[0]
+    print(proc.communicate("abcxyz")[0])
     proc.wait()
 

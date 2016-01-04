@@ -21,9 +21,9 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 
-from _zipwalk import zipwalk
-from redirector import StdoutRedirector, StderrRedirector
-from _logging import logger
+from ._zipwalk import zipwalk
+from .redirector import StdoutRedirector, StderrRedirector
+from ._logging import logger
 
 __all__ = ["zipwalk", "StdoutRedirector", "StderrRedirector", "logger"]
 

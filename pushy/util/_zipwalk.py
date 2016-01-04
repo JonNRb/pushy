@@ -48,8 +48,8 @@ def zipwalk(zf, subdir=None):
             parent[1].append(parts[-1])
 
     def _walk(hierarchy, dir):
-        yield (dir, hierarchy[0].keys(), hierarchy[1])
-        for (subdir, sub_hierarchy) in hierarchy[0].items():
+        yield (dir, list(hierarchy[0].keys()), hierarchy[1])
+        for (subdir, sub_hierarchy) in list(hierarchy[0].items()):
             if dir is not None:
                 subdir = os.path.join(dir, subdir)
             for result in _walk(sub_hierarchy, subdir):

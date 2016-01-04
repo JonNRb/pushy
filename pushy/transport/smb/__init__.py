@@ -23,20 +23,20 @@
 
 __all__ = ["Popen"]
 
-import struct, sys, pushy.transport, StringIO
+import struct, sys, pushy.transport, io
 
 # On Windows, prefer the native interface.
 BasePopen = None
 if sys.platform == "win32":
     try:
-        import native
+        from . import native
         BasePopen = native.NativePopen
     except ImportError: pass
 
 # If we're not on Windows, or the native interface is unavailable, use the
 # Impacket library instead.
 if BasePopen is None:
-    import impacket_transport
+    from . import impacket_transport
     BasePopen = impacket_transport.ImpacketPopen
 
 # Common class which inherits from either the native win32 or Impacket class.
@@ -56,7 +56,7 @@ class Popen(pushy.transport.BaseTransport, BasePopen):
 
         pushy.transport.BaseTransport.__init__(self, address)
         BasePopen.__init__(self, address, username, password, domain)
-        self.stderr = StringIO.StringIO()
+        self.stderr = io.StringIO()
 
         # Write program arguments.
         packed_args = struct.pack(">B", len(command))

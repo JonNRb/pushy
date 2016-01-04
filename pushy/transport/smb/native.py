@@ -23,7 +23,7 @@
 
 __all__ = ["NativePopen"]
 
-import os, struct, sys, subprocess, StringIO, threading
+import os, struct, sys, subprocess, io, threading
 import pushy.transport
 from ctypes import *
 from ctypes.wintypes import *
@@ -138,7 +138,7 @@ class Handle:
         if self.handle:
             value = CloseHandle(self.handle)
             if not value:
-                raise Exception, "Failed to close handle"
+                raise Exception("Failed to close handle")
         self.handle = None
 
 
@@ -184,11 +184,11 @@ class Win32File(Handle):
                                  byref(written), byref(overlapped)):
                     error = GetLastError()
                     if error != ERROR_IO_PENDING:
-                        raise IOError, error
+                        raise IOError(error)
                     if not GetOverlappedResult(self.handle,
                                                byref(overlapped),
                                                byref(written), True):
-                        raise IOError, GetLastError()
+                        raise IOError(GetLastError())
             finally:
                 CloseHandle(overlapped.hEvent)
             total_written += written.value
@@ -207,11 +207,11 @@ class Win32File(Handle):
                                 byref(overlapped)):
                     error = GetLastError()
                     if error != ERROR_IO_PENDING:
-                        raise IOError, error
+                        raise IOError(error)
                     if not GetOverlappedResult(self.handle,
                                                byref(overlapped),
                                                byref(nread), True):
-                        raise IOError, GetLastError()
+                        raise IOError(GetLastError())
                 total_nread += nread.value
             finally:
                 CloseHandle(overlapped.hEvent)
@@ -251,7 +251,7 @@ def install_service(hostname):
     access = SC_MANAGER_CONNECT | SC_MANAGER_ENUMERATE_SERVICE
     handle = OpenSCManager(hostname, None, access)
     if handle == 0:
-        raise IOError, GetLastError()
+        raise IOError(GetLastError())
     try:
         bufsize = 2**16-1
         buf = create_string_buffer(bufsize)
@@ -263,9 +263,9 @@ def install_service(hostname):
                                        byref(bytesneeded), byref(servicecount),
                                        byref(resumehandle), None):
             if GetLastError() != ERROR_MORE_DATA:
-                raise IOError, GetLastError()
-            print "Enum succeeded", servicecount, resumehandle, error
-        print servicecount
+                raise IOError(GetLastError())
+            print("Enum succeeded", servicecount, resumehandle, error)
+        print(servicecount)
     finally:
         CloseServiceHandle(handle)
 
@@ -318,11 +318,11 @@ class NativePopen:
                                GENERIC_READ | GENERIC_WRITE,
                                0, 0, OPEN_EXISTING, flags, 0)
                 if handle == INVALID_HANDLE_VALUE:
-                    raise Exception, "Failed to open named pipe"
+                    raise Exception("Failed to open named pipe")
                 self.stdin = self.stdout = Win32File(handle)
             finally:
                 if not already_logged:
                     RevertToSelf()
         else:
-            raise Exception, "Authentication failed"
+            raise Exception("Authentication failed")
 

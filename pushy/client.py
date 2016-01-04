@@ -26,7 +26,7 @@ This module provides the code to used to start a remote Pushy server running,
 and initiate a connection.
 """
 
-import __builtin__
+import builtins
 import imp
 import inspect
 import marshal
@@ -150,17 +150,17 @@ class InMemoryImporter:
         parts = fullname.split(".")
         parent = [None, self.__packages, self.__modules]
         for part in parts[:-1]:
-            if parent[1].has_key(part):
+            if part in parent[1]:
                 parent = parent[1][part]
             else:
                 return
 
-        if parent[1].has_key(parts[-1]):
+        if parts[-1] in parent[1]:
             package = parent[1][parts[-1]]
             filename = package[0] + "/__init__.pyc"
             code = marshal.loads(package[2]["__init__"])
             return InMemoryLoader(fullname, filename, code, path=[])
-        elif parent[2].has_key(parts[-1]):
+        elif parts[-1] in parent[2]:
             if parent[0]:
                 filename = "%s/%s.pyc" % (parent[0], parts[-1])
             else:
@@ -186,7 +186,7 @@ class InMemoryLoader:
             module.__path__ = self.__path
         module.__loader__ = self
         sys.modules[fullname] = module
-        exec self.__code in module.__dict__
+        exec(self.__code, module.__dict__)
         return module
 
 def try_set_binary(fd):
@@ -255,8 +255,8 @@ class AutoImporter(object):
 ###############################################################################
 
 # Read the source for the server into a string. If we're the server, we'll
-# have defined __builtin__.pushy_source (by the "realServerLoaderSource").
-if not hasattr(__builtin__, "pushy_source"):
+# have defined builtins.pushy_source (by the "realServerLoaderSource").
+if not hasattr(builtins, "pushy_source"):
     if "__loader__" in locals():
         serverSource = __loader__.get_source(__name__)
         serverSource = marshal.dumps(serverSource, 1)
@@ -264,14 +264,14 @@ if not hasattr(__builtin__, "pushy_source"):
         serverSource = open(inspect.getsourcefile(AutoImporter)).read()
         serverSource = marshal.dumps(serverSource, 1)
 else:
-    serverSource = __builtin__.pushy_source
+    serverSource = builtins.pushy_source
 md5ServerSource = hashlib.md5(serverSource).digest()
 
 # This is the program we run on the command line. It'll read in a
 # predetermined number of bytes, and execute them as a program. So once we
 # start the process up, we immediately write the "real" server source to it.
 realServerLoaderSource = """
-import __builtin__, os, marshal, sys
+import builtins, os, marshal, sys
 try:
     import hashlib
 except ImportError:
@@ -295,9 +295,9 @@ while len(serverSource) < serverSourceLength:
 
 try:
     assert hashlib.md5(serverSource).digest() == %r
-    __builtin__.pushy_source = serverSource
+    builtins.pushy_source = serverSource
     serverCode = marshal.loads(serverSource)
-    exec serverCode
+    exec(serverCode)
     pushy_server(stdin, stdout)
 except:
     import traceback
@@ -308,8 +308,8 @@ except:
 
 # Avoid putting any quote characters in the program at all costs.
 serverLoaderSource = \
-  "exec reduce(lambda a,b: a+b, map(chr, (%s)))" \
-      % str((",".join(map(str, map(ord, realServerLoaderSource)))))
+  "exec(str().join(map(chr, (%s))))" \
+      % str((",".join(map(str, list(map(ord, realServerLoaderSource))))))
 
 ###############################################################################
 
@@ -318,13 +318,13 @@ def get_transport(target):
 
     colon = target.find(":")
     if colon == -1:
-        raise Exception, "Missing colon from transport address"
+        raise Exception("Missing colon from transport address")
 
     transport_name = target[:colon]
 
     if transport_name not in pushy.transports:
-        raise Exception, "Transport '%s' does not exist in pushy.transport" \
-                             % transport_name
+        raise Exception("Transport '%s' does not exist in pushy.transport" \
+                             % transport_name)
 
     transport = pushy.transports[transport_name]
     if transport is None:
@@ -346,7 +346,7 @@ class PushyClient(object):
     pushy_packages = None
     packages_lock  = threading.Lock()
 
-    def __init__(self, target, python="python", **kwargs):
+    def __init__(self, target, python="python3", **kwargs):
         (transport, address) = get_transport(target)
 
         # Start the server
@@ -395,12 +395,12 @@ class PushyClient(object):
             else:
                 self.fs = self.modules.os
         except:
-            lines = self.server.stderr.readlines()
+            lines = self.server.stderr.read().decode('utf-8').split('\n')
             msg = "\n" + "".join(["  [remote] " + line for line in lines])
             self.server = None
             self.remote = None
             self.serve_thread = None
-            raise ClientInitException, msg, sys.exc_info()[2]
+            raise ClientInitException(msg).with_traceback(sys.exc_info()[2])
 
 
     # With-statement/context-manager support
@@ -428,7 +428,7 @@ class PushyClient(object):
     def __putfile(self, local, remote):
         "Transport-independent fallback for putfile."
         f_read = open(local, "rb")
-        f_write = self.modules.__builtin__.open(remote, "wb")
+        f_write = self.modules.builtins.open(remote, "wb")
         try:
             d = f_read.read(8192)
             while len(d) > 0:
@@ -441,7 +441,7 @@ class PushyClient(object):
 
     def __getfile(self, remote, local):
         "Transport-independent fallback for getfile."
-        f_read = self.modules.__builtin__.open(remote, "rb")
+        f_read = self.modules.builtins.open(remote, "rb")
         try:
             f_write = open(local, "wb")
             try:
@@ -493,12 +493,12 @@ class PushyClient(object):
                 source = "".join([l[unindent_len:] for l in source])
 
                 code = remote_compile(source, inspect.getfile(func), "exec")
-                locals = {}
-                self.eval(code, locals=locals)
+                _locals = {}
+                self.eval(code, locals=_locals)
                 # We can't use func_name, because that doesn't apply to
                 # lambdas. Lambdas seem to have their assigned name built-in,
                 # but I'm not sure how to extract it.
-                return locals.values()[0]
+                return list(_locals.values())[0]
             except IOError:
                 from pushy.util.clone_function import clone_function
                 return self.compile(clone_function)(func)

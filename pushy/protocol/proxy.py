@@ -23,7 +23,7 @@
 
 from pushy.protocol.message import message_types, MessageType
 import pushy.util
-import exceptions, types
+import builtins, types
 
 
 class ProxyType(object):
@@ -61,7 +61,7 @@ class ProxyType(object):
             return ProxyType.list
         if isinstance(obj, types.ModuleType):
             return ProxyType.module
-        if isinstance(obj, types.ClassType):
+        if isinstance(obj, type):
             return ProxyType.oldstyleclass
         return ProxyType.object
 
@@ -116,7 +116,7 @@ def create_instance(args, conn, on_proxy_init):
             return conn.operator(message_type, self, args, kwargs)
         def __getattr__(self, name):
             if name == "__call__":
-                raise AttributeError, "__call__"
+                raise AttributeError("__call__")
             return conn.getattr(self, name)
     return ClassObjectProxy
 
@@ -134,7 +134,7 @@ def create_object(args, conn, on_proxy_init):
 def create_exception(args, conn, on_proxy_init):
     BaseException = Exception
     if args is not None:
-        BaseException = getattr(exceptions, args)
+        BaseException = getattr(builtins, args)
     class ExceptionProxy(BaseException):
         def __init__(self):
             on_proxy_init(self)
@@ -164,7 +164,7 @@ def create_dictionary(args, conn, on_proxy_init):
             return list(conn.as_tuple(conn.getattr(self, "values")))
         def __eq__(self, rhs):
             if self is rhs: return True
-            return self.items() == rhs.items()
+            return self.items()) == rhs.items()
         def __getattribute__(self, name):
             if name in overridden_methods:
                 return object.__getattribute__(self, name)
@@ -261,11 +261,11 @@ def Proxy(opmask, proxy_type, args, conn, on_proxy_init):
             return False
         a = getattr(ProxyClass, t.name[2:], None)
         return a is None or not \
-            (type(a) is types.MethodType and a.im_class is ProxyClass)
+            (type(a) is types.MethodType and a.__self__.__class__ is ProxyClass)
 
     # Create proxy operators.
     types_ = (t for t in message_types if should_setattr(t))
-    map(lambda t: setattr(ProxyClass, t.name[2:], bound_operator(t)), types_)
+    list(map(lambda t: setattr(ProxyClass, t.name[2:], bound_operator(t)), types_))
 
     # Add other standard methods.
     setattr(ProxyClass, "__str__", lambda self: conn.getstr(self))

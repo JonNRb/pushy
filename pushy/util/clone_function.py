@@ -28,7 +28,7 @@ def clone_function(func, globals=None):
     """
 
     from types import CodeType, FunctionType
-    co = func.func_code
+    co = func.__code__
     code = CodeType(
         co.co_argcount,
         co.co_nlocals,
@@ -44,8 +44,8 @@ def clone_function(func, globals=None):
         co.co_lnotab
     )
 
-    import __builtin__
+    import builtins
     if globals is None:
-        globals = __builtin__.globals()
-    return FunctionType(code, globals, func.func_name, func.func_defaults)
+        globals = builtins.globals()
+    return FunctionType(code, globals, func.__name__, func.__defaults__)
 

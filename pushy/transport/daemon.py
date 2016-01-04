@@ -21,7 +21,7 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 
-import os, socket, StringIO
+import os, socket, io
 
 import pushy.transport
 import pushy.server
@@ -51,7 +51,7 @@ class Popen(pushy.transport.BaseTransport):
                                         self.__socket, socket.SHUT_WR)
         self.stdout = WrappedSocketFile(self.__socket.makefile("rb"),
                                         self.__socket, socket.SHUT_RD)
-        self.stderr = StringIO.StringIO()
+        self.stderr = io.StringIO()
         self.stdin._close = True
 
     def close(self):

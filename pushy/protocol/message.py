@@ -21,7 +21,7 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 
-import os, struct, thread
+import os, struct, _thread
 import marshal
 import pushy.util
 
@@ -49,15 +49,15 @@ class MessageType(object):
 
 def read(file, length):
     # Read message payload.
-    data = ""
+    data = b""
     if length:
         while len(data) < length:
             try:
                 partial = file.read(length - len(data))
-            except Exception, e:
-                raise IOError, e
-            if partial == "":
-                raise IOError, "End of file"
+            except Exception as e:
+                raise IOError(e)
+            if not partial:
+                raise IOError("End of file")
             data += partial
     return data
 
@@ -71,7 +71,7 @@ class Message:
         self.payload  = payload
         self.target   = target
         if source is None:
-            source = thread.get_ident()
+            source = _thread.get_ident()
         self.source = source
 
     def __eq__(self, other):

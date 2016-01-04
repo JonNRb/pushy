@@ -27,9 +27,9 @@ between interpreters. This is the core code for implementing proxies to objects
 in remote Python interpreters.
 """
 
-import message
-import proxy
-from connection import Connection
+from . import message
+from . import proxy
+from .connection import Connection
 
 __all__ = ["message", "proxy", "Connection"]
 

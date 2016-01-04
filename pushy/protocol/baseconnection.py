@@ -26,7 +26,7 @@ import marshal
 import os
 import struct
 import sys
-import thread
+import _thread
 import threading
 import time
 import weakref
@@ -38,7 +38,7 @@ import pushy.util
 # This collection should contain only immutable types. Builtin, mutable types
 # such as list, set and dict need to be handled specially.
 marshallable_types = [
-    unicode, slice, frozenset, float, basestring, long, str, int, complex,
+    str, slice, frozenset, float, str, int, str, int, complex,
     bool, type(None)
 ]
 
@@ -110,7 +110,7 @@ class ResponseHandler:
     def __init__(self, condition):
         self.condition = condition
         self.message   = None
-        self.thread    = thread.get_ident()
+        self.thread    = _thread.get_ident()
 
 
 connection_count_lock = threading.Lock()
@@ -268,7 +268,7 @@ Proxied Object Count: %r
                         self.__handle(m)
                 except IOError:
                     return
-                except ValueError, err:
+                except ValueError as err:
                     # File could already be closed
                     if err.message == 'I/O operation on closed file':
                         return
@@ -299,9 +299,9 @@ Proxied Object Count: %r
         self.__processing_condition.acquire()
         try:
             if not self.__open:
-                raise Exception, "Connection is closed"
+                raise Exception("Connection is closed")
 
-            handler = self.__response_handlers.get(thread.get_ident(), None)
+            handler = self.__response_handlers.get(_thread.get_ident(), None)
             if handler is None:
                 handler = ResponseHandler(self.__processing_condition)
                 self.__response_handlers[handler.thread] = handler
@@ -316,7 +316,7 @@ Proxied Object Count: %r
         # Send the message.
         self.__send_message(message_type, args)
 
-        # Wait for the response handler to be signalled.
+        # Wait for the response handler to be signaled.
         try:
             m = self.__waitForResponse(handler)
             while self.__open and (m is None or m.type not in response_types):
@@ -446,7 +446,7 @@ Proxied Object Count: %r
                     # request.
                     self.__waiting -= 1
             elif not self.__open:
-                raise Exception, "Connection is closed"
+                raise Exception("Connection is closed")
 
             return handler.message
         finally:
@@ -533,7 +533,7 @@ Proxied Object Count: %r
                     lambda proxy: self.__register_proxy(proxy, oid, version)
                 return Proxy(opmask, proxy_type, args, self, register_proxy)
             else:
-                raise ValueError, "Invalid type: %r" % obj[0]
+                raise ValueError("Invalid type: %r" % obj[0])
         else:
             # Simple type.
             return obj
@@ -633,7 +633,7 @@ Proxied Object Count: %r
                 if m.type not in response_types:
                     self.__send_response(result)
                 return result
-            except SystemExit, e:
+            except SystemExit as e:
                 self.__send_response(e.code)
                 raise e
             except:
