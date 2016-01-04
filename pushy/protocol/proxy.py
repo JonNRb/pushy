@@ -164,7 +164,7 @@ def create_dictionary(args, conn, on_proxy_init):
             return list(conn.as_tuple(conn.getattr(self, "values")))
         def __eq__(self, rhs):
             if self is rhs: return True
-            return self.items()) == rhs.items()
+            return self.items() == rhs.items()
         def __getattribute__(self, name):
             if name in overridden_methods:
                 return object.__getattribute__(self, name)
