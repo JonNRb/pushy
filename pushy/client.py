@@ -34,6 +34,7 @@ import os
 import struct
 import sys
 import threading
+import types
 
 # Import zipimport, for use in PushyPackageLoader.
 try:
@@ -502,6 +503,28 @@ class PushyClient(object):
             except IOError:
                 from pushy.util.clone_function import clone_function
                 return self.compile(clone_function)(func)
+        elif inspect.ismodule(source):
+            module = source
+            # TODO: fix __loader__
+            ns = '''
+                dict(
+                    __name__    = '{}',
+                    __package__ = '{}',
+                    __file__    = '<pushy>',
+                    __doc__     =  None,
+                    __spec__    =  None,
+                    #__loader__  =  __loader__,
+                    __cached__  =  None,
+                )
+            '''.format(module.__name__, module.__package__).strip()
+            g = self.eval(ns)
+            l = g
+            source = module.__loader__.get_source(module.__name__)
+            self.execute(source, g, l) # Recurse on the module source.
+            m = types.ModuleType(module.__name__)
+            for k, v in g.items():
+                setattr(m, k, v)
+            return m
         else:
             return self.eval("compile")(source, "<pushy>", mode)
 
