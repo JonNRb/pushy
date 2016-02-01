@@ -397,7 +397,8 @@ class PushyClient(object):
                 self.fs = self.modules.os
         except:
             lines = self.server.stderr.read().decode('utf-8').split('\n')
-            msg = "\n" + "".join(["  [remote] " + line for line in lines])
+            msg = "\n" + "\n".join(
+                ["  [remote] " + line for line in lines if line.strip()])
             self.server = None
             self.remote = None
             self.serve_thread = None
